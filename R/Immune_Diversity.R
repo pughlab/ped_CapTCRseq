@@ -22,7 +22,7 @@ immunelistfx <- function(file_list, datapath, chain){
     message("number of clones in file:", f)
     print(nrow(mixcrfle))
     f <- substr(f, 11, nchar(f)-4)
-    if(nrow(mixcrfle) <= 1){next()}
+    if(nrow(mixcrfle) < 1){next()}
     message("number of non prodcutive CDR3s:")
     print(length(mixcrfle$aaSeqCDR3[grepl("[*]", mixcrfle$aaSeqCDR3) | grepl("_", mixcrfle$aaSeqCDR3)]))
 
