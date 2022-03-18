@@ -237,7 +237,7 @@ track_Aclone.fx <- function(compldfle, plotpath, countfrac, clnefrc, clnseq){
     labs(y = countfrac)
   
   pdf(paste0(plotpath, "trackAclone_", mysamples[1], countfrac, ".pdf"),
-      width = 15,
+      width = 30,
       height = 20,
       useDingbats = FALSE,
       onefile = FALSE)
