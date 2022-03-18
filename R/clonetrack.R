@@ -2,7 +2,7 @@ library(ggplot2)
 require(ggalluvial)
 library(randomcoloR)
 
-
+# Create a dataframe for tracking clones
 cdr3_dataframe.fx <- function(datapath, chain, filelist, totalinframe){
 
   if (!(totalinframe %in% c("total", "inframe"))) {
@@ -67,6 +67,8 @@ cdr3_dataframe.fx <- function(datapath, chain, filelist, totalinframe){
     return(compldfle)}
 }
 
+
+# Track common clones (clones in at least two samples)
 plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc){
 
   if (!(countfrac %in% c("cloneFraction", "cloneCount"))) {
@@ -177,3 +179,74 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc){
   dev.off()
 
 }
+
+# Clone specific clones given as argument
+track_Aclone.fx <- function(compldfle, plotpath, countfrac, clnefrc, clnseq){
+  
+  message("list of samples to track clones: ")
+  mysamples <- unique(compldfle$samplename)
+  print(mysamples)
+  
+  # Subset df
+  CDR3_fraction <- compldfle[, c("samplename","nSeqCDR3","cloneFraction", "cloneCount")]
+  
+  # Subset to include only clonotypes with more than specified clonal fraction
+  CDR3_fraction <- CDR3_fraction[CDR3_fraction$cloneFraction > clnefrc,]
+  
+  #Assign colors to the specific clone
+  myclone <- clnseq
+  notrecurring <- CDR3_fraction$nSeqCDR3[!CDR3_fraction$nSeqCDR3 %in% myclone]
+  
+  cloneColor <- distinctColorPalette(length(myclone))
+  myColors <- c(cloneColor, rep("white",length(notrecurring)))
+  names(myColors) <- c(myclone, notrecurring)
+  
+  # Generate a row for each sample that doesnot have jurkat clonotype
+  ## This ensures alluvia are colored
+  
+  tmp <- CDR3_fraction[CDR3_fraction$nSeqCDR3 == myclone,]
+  nonexisting <- mysamples[!mysamples %in% tmp$samplename]
+  if(length(nonexisting) > 0){
+    newentries <- data.frame("samplename" = nonexisting, "nSeqCDR3" = myclone,
+                             "cloneFraction" = 0, "cloneCount" = 0)
+    CDR3_fraction <- rbind(CDR3_fraction, newentries)
+  }
+  
+  p <-  ggplot(CDR3_fraction, aes(x = samplename,
+                                  y = eval(as.name(countfrac)),
+                                  fill = nSeqCDR3,
+                                  stratum = nSeqCDR3,
+                                  alluvium = nSeqCDR3,
+                                  label = nSeqCDR3))
+  
+  myp <- p + geom_alluvium(decreasing = FALSE) +
+    geom_stratum(decreasing = FALSE, stat = "alluvium") +
+    scale_fill_manual(breaks = names(myColors[myColors != "white"]),
+                      values = myColors) +
+    theme(axis.title.y = element_text(size = 50),
+          axis.title.x = element_blank(),
+          axis.line = element_line(color = "black"),
+          axis.text = element_text(size = 50),
+          axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_rect(fill = "transparent",colour = NA),
+          legend.key = element_rect(fill = "white", colour = "white"),
+          legend.position = "none",
+          plot.margin = unit(c(0.2,0,0,0),"cm")) +
+    labs(y = countfrac)
+  
+  pdf(paste0(plotpath, "trackAclone_", mysamples[1], countfrac, ".pdf"),
+      width = 15,
+      height = 20,
+      useDingbats = FALSE,
+      onefile = FALSE)
+  print(myp)
+  dev.off()
+  
+}
+
+
+
+
+
