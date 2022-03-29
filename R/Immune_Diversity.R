@@ -45,6 +45,9 @@ immunelistfx <- function(file_list, datapath, chain){
 #' @examples data(celllines_list)
 #' Divstats.fx(celllines_list, "TRB", "thisismytest", "~/")
 #'
+#'
+#'
+#'
 Divstats.fx <- function(lst, chain, batchname, outpath){
   require(iNEXT)
 
@@ -92,4 +95,30 @@ Divstats.fx <- function(lst, chain, batchname, outpath){
 }
 
 
+# For adaptive data type
+immunelist_adaptive.fx <- function(file_list, datapath, chain){
+  
+  readlist = list()
+  i <- 1
+  for (f in file_list) {
+    adaptfle <- read.table(paste0(datapath, f), header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+    
+    if(sum(colnames(adaptfle) == "cloneCount") == 0){
+      adaptfle$cloneCount <- adaptfle$count..templates.
+      adaptfle$cloneFraction <- adaptfle$frequencyCount....   }
+    
+    message("number of clones in file:", f)
+    print(nrow(adaptfle))
+    if (nrow(adaptfle) < 1) {
+      (next)()
+    }
+    
+    
+    adaptfle <- adaptfle[adaptfle$aminoAcid != "", ]
+    readlist[[i]] <- adaptfle$cloneCount
+    names(readlist)[i] <- f
+    i <- i + 1
+  }
+  return(readlist)
+}
 
