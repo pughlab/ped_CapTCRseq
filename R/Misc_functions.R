@@ -45,7 +45,6 @@ histp <- function(df, var){
 
 
 #mclapply to print warnings and errors from SO: https://stackoverflow.com/questions/21486658/warnings-suppressed-with-mclapply-in-r
-
 safe_mclapply <- function(X, FUN, mc.cores, stop.on.error=T, ...){
   fun <- function(x){
     res_inner <- tryCatch({
@@ -90,3 +89,36 @@ safe_mclapply <- function(X, FUN, mc.cores, stop.on.error=T, ...){
 message_parallel <- function(...){
   system(sprintf('echo "\n%s\n"', paste0(..., collapse="")))
 }
+
+
+# Add a specific clone (eg jurkat) incrementally to generate some test dataset
+addjurkat.fx <- function(f1, Jurkat, percincrement, outpath){
+  jurkatclone <- Jurkat[1,]
+  print(summary(f1$cloneCount))
+  print(sum(f1$cloneCount))
+  increment <- sum(f1$cloneCount) * percincrement
+  myseq <- seq(0, sum(f1$cloneCount), increment)
+  
+  #get random rows
+  set.seed(777)
+  samprows <- sample(1:nrow(f1))     
+  for(i in myseq[myseq != 0]){
+    message(i)
+    jurkatclone$cloneCount <- i
+    myperc <- i / sum(f1$cloneCount)
+    # random rows that cumsum is close to i
+    removerows <- samprows[which(cumsum(f1[samprows, "cloneCount"]) <= i)] 
+    print(sum(f1$cloneCount[removerows]))
+    # bind jurkat clone to f1
+    mycloneset <- rbind(f1[-removerows,], jurkatclone)
+    #recalculate clonefraction
+    mycloneset$cloneFraction <- mycloneset$cloneCount/sum(mycloneset$cloneCount)
+    #order clonefraction
+    mycloneset <- mycloneset[ order(mycloneset$cloneCount, decreasing = T),]        
+    # make clone count integer
+    mycloneset$cloneCount <- as.integer(mycloneset$cloneCount) 
+    write.table(mycloneset, file = paste0(outpath, "CLONES_TRBaddjurkat_", i,"_",myperc, ".txt"), quote = F, sep = "\t")   
+  }
+}
+
+
