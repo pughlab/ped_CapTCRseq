@@ -69,7 +69,7 @@ cdr3_dataframe.fx <- function(datapath, chain, filelist, totalinframe){
 
 
 # Track common clones (clones in at least two samples)
-plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc){
+plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, plottitle){
 
   if (!(countfrac %in% c("cloneFraction", "cloneCount"))) {
     stop("Error: unknown argument ", countfrac, ". Please provide either cloneFraction or cloneCount.")
@@ -144,7 +144,6 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc){
     }
   }
 
-
   p <-  ggplot(CDR3_fraction, aes(x = samplename,
                                   y = eval(as.name(countfrac)),
                                   fill = nSeqCDR3,
@@ -160,14 +159,15 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc){
           axis.title.x = element_blank(),
           axis.line = element_line(color = "black"),
           axis.text = element_text(size = 50),
-          axis.text.x = element_text(angle = 45, hjust = 1)) +
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.title = element_text(size = 50, hjust = 0.5)) +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_rect(fill = "transparent",colour = NA),
           legend.key = element_rect(fill = "white", colour = "white"),
           legend.position = "none",
           plot.margin = unit(c(0.2,0,0,0),"cm")) +
-    labs(y = countfrac)
+    labs(y = countfrac) + labs(title = plottitle)
 
   pdf(paste0(plotpath, "clonetrack_", mysamples[1],
              chain, countfrac, ".pdf"),
