@@ -36,13 +36,19 @@ addjurkat.fx <- function(f1, Jurkat, percincrement, outpath){
 
 
 #plot histograms
-histp <- function(df, var){
+histp <- function (df, var, bin) {
   myp <- ggplot(data = df, aes(x = eval(parse(text = var)))) + 
-    geom_histogram() + myplot + myaxis + labs(x = var)
+    geom_histogram(bins = bin) + myplot + myaxis + labs(x = var)
   return(myp)
 }
 
-
+#plot histograms and density
+histdenp <- function (df, var, bin) {
+  myp <- ggplot(data = df, aes(x = eval(parse(text = var)))) + 
+    geom_histogram(aes(y = ..density..), fill = "white", color = "black" , binwidth = bin) +
+    geom_density(color = "red", size = 1) + myplot + myaxis + labs(x = var)
+  return(myp)
+}
 
 #mclapply to print warnings and errors from SO: https://stackoverflow.com/questions/21486658/warnings-suppressed-with-mclapply-in-r
 safe_mclapply <- function(X, FUN, mc.cores, stop.on.error=T, ...){
