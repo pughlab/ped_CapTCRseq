@@ -45,8 +45,10 @@ cdr3_dataframe.fx <- function(datapath, chain, filelist, totalinframe){
   #make samplename column
   compldfle$filename <- as.character(compldfle$filename)
   compldfle$samplename <- gsub(".*.CLONES_","", compldfle$filename)
+  compldfle$samplename <- gsub("CLONES_","", compldfle$samplename)
   compldfle$samplename <- gsub(chain,"", compldfle$samplename)
-
+  compldfle$samplename <- gsub(".txt","", compldfle$samplename)
+  
   # remove out-of-frame clonotypes and those with stop codon
   compldfle_clean <- compldfle[!grepl("_", compldfle$aaSeqCDR3) &
                                  !grepl("[*]", compldfle$aaSeqCDR3),]
