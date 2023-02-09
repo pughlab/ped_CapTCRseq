@@ -16,5 +16,8 @@ myplot <-
   theme(legend.key = element_rect(fill = "white", colour = "white"),
         legend.position = "right", 
         legend.text = element_text( color = "black", size = 25),
-        legend.title = element_text( color = "black", size = 25),
-        legend.key.size = unit(1, 'cm')) 
+        legend.title = element_blank(),
+        legend.key.size = unit(1, 'cm'))  +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, colour = "black"))
+
+
