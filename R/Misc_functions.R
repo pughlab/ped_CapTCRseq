@@ -45,7 +45,7 @@ histp <- function (df, var, bin) {
 #plot histograms and density
 histdenp <- function (df, var, bin) {
   myp <- ggplot(data = df, aes(x = eval(parse(text = var)))) + 
-    geom_histogram(aes(y = ..density..), fill = "white", color = "black" , binwidth = bin) +
+    geom_histogram(aes(y = after_stat(density)), fill = "white", color = "black" , binwidth = bin) +
     geom_density(color = "red", size = 1) + myplot + myaxis + labs(x = var)
   return(myp)
 }
