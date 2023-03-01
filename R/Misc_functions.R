@@ -50,6 +50,24 @@ histdenp <- function (df, var, bin) {
   return(myp)
 }
 
+
+#to align plots (from stackoverflow)
+# Function to align plots (from stackoverflow) 
+align_plots1 <- function (...) {
+  pl <- list(...)
+  stopifnot(do.call(all, lapply(pl, inherits, "gg")))
+  gl <- lapply(pl, ggplotGrob)
+  bind2 <- function(x, y) gtable:::rbind_gtable(x, y, "first")
+  combined <- Reduce(bind2, gl[-1], gl[[1]])
+  wl <- lapply(gl, "[[", "widths")
+  combined$widths <- do.call(grid::unit.pmax, wl)
+  grid::grid.newpage()
+  grid::grid.draw(combined)
+}
+
+
+
+
 #mclapply to print warnings and errors from SO: https://stackoverflow.com/questions/21486658/warnings-suppressed-with-mclapply-in-r
 safe_mclapply <- function(X, FUN, mc.cores, stop.on.error=T, ...){
   fun <- function(x){
