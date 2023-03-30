@@ -71,8 +71,8 @@ cdr3_dataframe.fx <- function(datapath, chain, filelist, totalinframe){
 
 
 # Track common clones (clones in at least two samples)
-plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, plottitle){
-
+plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, plottitle, myseed){
+  set.seed(myseed)
   if (!(countfrac %in% c("cloneFraction", "cloneCount"))) {
     stop("Error: unknown argument ", countfrac, ". Please provide either cloneFraction or cloneCount.")
   }
@@ -157,12 +157,12 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
     geom_stratum(decreasing = FALSE, stat = "alluvium") +
     scale_fill_manual(breaks = names(myColors[myColors != "white"]),
                       values = myColors) +
-    theme(axis.title.y = element_text(size = 50),
+    theme(axis.title.y = element_text(size = 15),
           axis.title.x = element_blank(),
           axis.line = element_line(color = "black"),
-          axis.text = element_text(size = 50),
+          axis.text = element_text(size = 15),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          plot.title = element_text(size = 50, hjust = 0.5)) +
+          plot.title = element_text(size = 15, hjust = 0.5)) +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_rect(fill = "transparent",colour = NA),
@@ -171,15 +171,15 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
           plot.margin = unit(c(0.2,0,0,0),"cm")) +
     labs(y = countfrac) + labs(title = plottitle)
 
-  pdf(paste0(plotpath, "clonetrack_", mysamples[1],
-             chain, countfrac, ".pdf"),
-      width = 15,
-      height = 20,
+  pdf(paste0(plotpath, "clonetrack_", mysamples[1], chain, countfrac, ".pdf"),
+      width = 10,
+      height = 10,
       useDingbats = FALSE,
       onefile = FALSE)
   print(myp)
   dev.off()
 
+  return(myp)
 }
 
 # Clone specific clones given as argument
