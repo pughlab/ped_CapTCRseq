@@ -70,18 +70,24 @@ Divstats.fx <- function(lst, chain, batchname, outpath){
   div_stats[,"Singletons"] <- unlist(lapply(lst, function(x){length(which(x==1))}))
   div_stats[,"Doubletons"] <- unlist(lapply(lst, function(x){length(which(x==2))}))
 
+  message("Descriptives done")
   # Estimators
   out <- iNEXT(lst, 0, datatype="abundance")
   # Estimations based on Extrapolation
-  est <- out$iNextEst
-  qDlist <- lapply(est, "[[", "qD")
-  div_stats[, "qD"] <- unlist(lapply(qDlist, max))
-
-  SClist <- lapply(est, "[[", "SC")
-  div_stats[, "Sample_Coverage"] <- unlist(lapply(SClist, max))
+#   est <- out$iNextEst
+#   
+# message("qD added")
+#   qDlist <- lapply(est, "[[", "qD")
+#   div_stats[, "qD"] <- unlist(lapply(qDlist, max))
+#   print(head(qDlist))
+#   
+#   message("SC added")
+#   SClist <- lapply(est, "[[", "SC")
+#   print(head(qDlist))
+#   div_stats[, "Sample_Coverage"] <- unlist(lapply(SClist, max))
+#   
 
   # Asymptotic estimators
-
   AsyEst <- out$AsyEst
   div_stats[, c("observed_Richness", "estimated_Richness", "SE_Richeness")] <- as.matrix(AsyEst[AsyEst$Diversity == "Species richness",
                                                                                                 c("Observed", "Estimator", "s.e.")])
