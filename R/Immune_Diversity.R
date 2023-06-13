@@ -13,7 +13,7 @@ library(iNEXT)
 #'
 #'
 immunelistfx <- function(file_list, datapath, chain){
-  
+
   readlist = list()
   i <- 1
   for(f in file_list){
@@ -25,7 +25,7 @@ immunelistfx <- function(file_list, datapath, chain){
     if(nrow(mixcrfle) < 1){next()}
     message("number of non prodcutive CDR3s:")
     print(length(mixcrfle$aaSeqCDR3[grepl("[*]", mixcrfle$aaSeqCDR3) | grepl("_", mixcrfle$aaSeqCDR3)]))
-    
+
     mixcrfle <- mixcrfle[!grepl("_", mixcrfle$aaSeqCDR3) & !grepl("[*]", mixcrfle$aaSeqCDR3),]
     message("nonproductive aaCDR3 removed")
     readlist[[i]] <- mixcrfle$cloneCount
@@ -50,16 +50,16 @@ immunelistfx <- function(file_list, datapath, chain){
 #'
 Divstats.fx <- function(lst, chain, batchname, outpath){
   require(iNEXT)
-  
+
   div_stats <- matrix(ncol = 19, nrow = length(lst))
-  
+
   colnames(div_stats) <- c(chain,"Reads", "CPKR","Average_reads", "VMR","Max_reads","Singletons", "Doubletons",
                            "qD", "Sample_Coverage",
                            "observed_Richness", "estimated_Richness", "SE_Richeness",
                            "observed_Shannon", "estimated_Shannon", "SE_Shannon",
                            "observed_Simpson", "estimated_Simpson", "SE_Simpson")
   rownames(div_stats) <- names(lst)
-  
+
   #Descriptives
   div_stats[,chain] <- unlist(lapply(lst, length))
   div_stats[,"Reads"] <- unlist(lapply(lst, sum))
@@ -69,27 +69,22 @@ Divstats.fx <- function(lst, chain, batchname, outpath){
   div_stats[,"Max_reads"] <- unlist(lapply(lst, max))
   div_stats[,"Singletons"] <- unlist(lapply(lst, function(x){length(which(x==1))}))
   div_stats[,"Doubletons"] <- unlist(lapply(lst, function(x){length(which(x==2))}))
-  
+
   message("Descriptives done")
   # Estimators
   out <- iNEXT(lst, 0, datatype="abundance")
   # Estimations based on Extrapolation
   est <- out$iNextEst
-  
-  maxqDlist <- lapply( names(lst), function(x){ 
-    max(est$size_based[ est$size_based$Assemblage == x, "qD"] )
-  })
-  
-  div_stats[, "qD"] <- unlist(maxqDlist)
+
+  qDlist <- lapply(est, "[[", "qD")
+  div_stats[, "qD"] <- unlist(lapply(qDlist, max))
   message("qD added")
-  
-  maxSClist <- lapply( names(lst), function(x){ 
-    max(est$size_based[ est$size_based$Assemblage == x, "SC"] )
-  })
-  
-  div_stats[, "Sample_Coverage"] <- unlist(maxSClist)
+
+  SClist <- lapply(est, "[[", "SC")
+  print(head(qDlist))
+  div_stats[, "Sample_Coverage"] <- unlist(lapply(SClist, max))
   message("SC added")
-  
+
   # Asymptotic estimators
   AsyEst <- out$AsyEst
   div_stats[, c("observed_Richness", "estimated_Richness", "SE_Richeness")] <- as.matrix(AsyEst[AsyEst$Diversity == "Species richness",
