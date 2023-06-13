@@ -74,18 +74,17 @@ Divstats.fx <- function(lst, chain, batchname, outpath){
   # Estimators
   out <- iNEXT(lst, 0, datatype="abundance")
   # Estimations based on Extrapolation
-#   est <- out$iNextEst
-#   
-# message("qD added")
-#   qDlist <- lapply(est, "[[", "qD")
-#   div_stats[, "qD"] <- unlist(lapply(qDlist, max))
-#   print(head(qDlist))
-#   
-#   message("SC added")
-#   SClist <- lapply(est, "[[", "SC")
-#   print(head(qDlist))
-#   div_stats[, "Sample_Coverage"] <- unlist(lapply(SClist, max))
-#   
+  est <- out$iNextEst
+
+
+  qDlist <- lapply(est, "[[", "qD")
+  div_stats[, "qD"] <- unlist(lapply(qDlist, max))
+  message("qD added")
+
+  SClist <- lapply(est, "[[", "SC")
+  print(head(qDlist))
+  div_stats[, "Sample_Coverage"] <- unlist(lapply(SClist, max))
+  message("SC added")
 
   # Asymptotic estimators
   AsyEst <- out$AsyEst
@@ -98,6 +97,7 @@ Divstats.fx <- function(lst, chain, batchname, outpath){
   write.csv(div_stats,
             file = paste0(outpath, "divstats_", chain, batchname, ".csv"),
             row.names = TRUE)
+  message("Done!")
 }
 
 
