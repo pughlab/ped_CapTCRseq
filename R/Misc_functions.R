@@ -145,4 +145,22 @@ addjurkat.fx <- function(f1, Jurkat, percincrement, outpath){
   }
 }
 
-
+sampletags_columns <- function(orig_df, grepvars) {
+  orig_df$index <- 1:nrow(orig_df) # add index column
+  orig_df$sample_tags <- paste0(orig_df$index,",",orig_df$sample_tags) # add index to sample_tags
+  splitsampletags <- strsplit(orig_df$sample_tags, split = ",") # split sample_tags by comma into a list
+  # for each sample_tag, extract the variables in grepvars as list
+  mydf <- lapply(splitsampletags, function(sampletag){ 
+    y <- unlist(sampletag)
+    y <- trimws(y)
+    indx <- y[1] # first element is index
+    # for each variable in grepvars, extract the value if it exists, if not add NA
+    myvars <- lapply(grepvars, function(myvar){
+      ifelse(sum(grepl(myvar, y)) == 1, y[grepl(myvar, y)], NA) })
+    myvarsdf <- as.data.frame(myvars)
+    vardf <- cbind.data.frame(indx, myvarsdf)
+    colnames(vardf) <- c("index", grepvars) # rename columns
+    return(vardf)
+  })
+  return(do.call(rbind, mydf)) # return a data frame
+}
