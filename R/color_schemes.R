@@ -1,6 +1,7 @@
 group_col <- c("Leukemia" = "#1B9E77",
                "Lymphoma" = "#D95F02",
                "Solid tumors" = "#7570B3",
+               "T-cell malignancies" = "#2171b5",
                "LFS" = "black",
                "Normal" ="light grey")
 

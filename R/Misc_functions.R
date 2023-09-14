@@ -1,3 +1,19 @@
+# round and format pvalues super large ones with sci notation
+round_and_format <- function(x, threshold = 0.001) {
+  # Round to the second significant digit
+  magnitude <- 10 ^ (floor(log10(abs(x))))
+  rounded <- round(x / magnitude, 1) * magnitude
+  
+  # Format based on threshold
+  if (rounded < threshold) {
+    return(format(rounded, scientific = TRUE, digits = 2)) #two digits for scientific notation
+  } else {
+    return(format(rounded, scientific = FALSE, digits = 1)) # one digit for non-scientific notation
+  }
+}
+
+
+
 #from SO: https://stackoverflow.com/questions/27627798/write-a-data-frame-to-a-xls-file-with-a-title
 
 text_matrix <- function(dat, table_title) {
@@ -164,3 +180,18 @@ sampletags_columns <- function(orig_df, grepvars) {
   })
   return(do.call(rbind, mydf)) # return a data frame
 }
+
+
+
+toString_onefle.fx <- function(df, tostringvar){
+  setDT(df)
+  ab <- df[, .(tostringvar = toString( eval(parse( text = tostringvar))), #bind subjects
+               count = sum(count)),  #get sum of counts
+           by = c("CDR3b", "TRBV", "TRBJ")] #get duplicates sequences with the same cdr3 + TRBV + TRBJ
+  df_ab <- merge(df, ab, by = c("CDR3b","TRBV","TRBJ")) # merge together
+  df_ab_dedup <- dplyr::distinct(df_ab, CDR3b, TRBV, TRBJ, tostringvar, .keep_all= TRUE)
+  
+  return(df_ab_dedup[, c("CDR3b", "TRBV", "TRBJ", "samplename", 
+                         "count.y", "clonefraction", "tostringvar", "file")])
+}
+
