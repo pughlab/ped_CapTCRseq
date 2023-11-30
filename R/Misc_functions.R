@@ -196,3 +196,40 @@ toString_onefle.fx <- function(df, tostringvar){
                          "count.y", "clonefraction", "tostringvar", "file")])
 }
 
+# spiderplot function
+calculate_delta.fx <- function(df, var1, var2) {
+  # make a tbale patient x var1
+  mytab <- table(df$Patient, df[[var1]])
+  # min two samples per patient
+  mytab <- mytab[rowSums(mytab == 1) > 1, ]
+  # select those samples with a baseline
+  baseline_patients <- rownames(mytab)[mytab[, 1] == 1]
+  df1 <- df[df$Patient %in% baseline_patients, ]
+  result <- df1 %>%
+    group_by(Patient) %>%
+    mutate(Difference = eval(parse(text = var2)) - eval(parse(text = var2))[eval(parse(text = var1)) == "X01"])
+  return(result)
+}
+
+
+delta_basespiderplot.fx <- function(df_diff, var1, clrby, colpal) {
+  # df_diff from calculate_delta.fx
+  p0 <- ggplot(
+    df_diff,
+    aes(x = eval(parse(text = var1)), y = Difference)
+  ) +
+    geom_point(aes(color = eval(parse(text = clrby))), cex = 2) +
+    geom_line(aes(group = Patient, color = eval(parse(text = clrby)))) +
+    scale_color_manual(values = colpal) +
+    myplot +
+    myaxis +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.title.x = element_blank()
+    )
+  return(p0)
+}
+
+
+
+
