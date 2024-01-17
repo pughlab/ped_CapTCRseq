@@ -80,7 +80,7 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
   message("list of samples to track clones: ")
   mysamples <- unique(compldfle$samplename)
   print(mysamples)
-
+  print(unique(compldfle$samplelabel) )
   # Subset df
   CDR3_fraction <- compldfle[, c("samplename","nSeqCDR3","cloneFraction", "cloneCount")]
 
@@ -169,7 +169,8 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
           legend.key = element_rect(fill = "white", colour = "white"),
           legend.position = "none",
           plot.margin = unit(c(0.2,0,0,0),"cm")) +
-    labs(y = countfrac) + labs(title = plottitle)
+    labs(y = countfrac) + labs(title = plottitle) +
+    scale_x_discrete(labels = levels(compldfle$samplelabel) )
 
   pdf(paste0(plotpath, "clonetrack_", mysamples[1], chain, countfrac, ".pdf"),
       width = 10,
