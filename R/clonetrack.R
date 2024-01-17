@@ -172,13 +172,13 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
     labs(y = countfrac) + labs(title = plottitle) +
     scale_x_discrete(labels = levels(compldfle$samplelabel) )
 
-  pdf(paste0(plotpath, "clonetrack_", mysamples[1], chain, countfrac, ".pdf"),
-      width = 10,
-      height = 10,
-      useDingbats = FALSE,
-      onefile = FALSE)
-  print(myp)
-  dev.off()
+  # pdf(paste0(plotpath, "clonetrack_", mysamples[1], chain, countfrac, ".pdf"),
+  #     width = 10,
+  #     height = 10,
+  #     useDingbats = FALSE,
+  #     onefile = FALSE)
+  # print(myp)
+  # dev.off()
 
   return(myp)
 }
