@@ -7,8 +7,7 @@ median.cohorts.fx <- function(df, myvar, mygroups){
   df.mygroups <- as.data.frame(df.mygroups) 
   df.mygroups$median <- as.numeric(df.mygroups$median)
   for(i in 1:nrow(df.mygroups)){
-    
-    df.mygroups$median[i]<-median(df[[myvar]][df[[mygroups]] == df.mygroups$group[i]])
+    df.mygroups$median[i]<-median(df[[myvar]][df[[mygroups]] == df.mygroups$group[i]], na.rm = T)
   }
   df.mygroups <- df.mygroups[order(df.mygroups$median, decreasing = F),]
   return(df.mygroups)
@@ -36,13 +35,19 @@ sort.df.fx <- function(df, median_df, myvar, mygroups){
     median_df$Median.start[i] <- tmp$Xpos[1]
     median_df$Median.stop[i] <- tmp$Xpos[nrow(tmp)]
     median_df$N[i]<-nrow(tmp)
-    start <- start+disease.width+30
+    start <- start+disease.width+15
     
   }
   median_df$medianloc <- median_df$Median.start+
     ((median_df$Median.stop-median_df$Median.start)/2)
   sorted.df$group <- factor(sorted.df[[mygroups]],
                             levels = median_df$group)
+  
+  # to color placeholders white
+  median_df$color_crossbar <- NA
+  median_df$color_crossbar[grepl("EMPTY",median_df$group)] <- "white"
+  median_df$color_crossbar[is.na(median_df$color_crossbar)] <- "black"
+  
   return(list(sorted.df,median_df))
 }
 
@@ -50,20 +55,20 @@ sort.df.fx <- function(df, median_df, myvar, mygroups){
 Splot.fx <- function(list.sorted_df.median, myvar, colby, colpal, plottitle){       
   sorted_df <- as.data.frame(list.sorted_df.median[[1]])
   median_df <- as.data.frame(list.sorted_df.median[[2]])
-  disease.width <- (nrow(sorted_df)/nrow(median_df)) 
-  
+  disease.width <- nrow(sorted_df)/nrow(median_df)
   
   Splot <- ggplot() +
     geom_point(data = sorted_df, 
                aes(x = Xpos ,y = eval(parse(text = myvar)),
                    color = eval(parse(text = colby))), 
-               size = 5) +
+               size = 4) +
     geom_crossbar(data = median_df, 
-                  aes(x =medianloc, y = median,
-                      ymin = median, ymax = median),
-                  width = disease.width) +
+                  aes(x = medianloc, y = median,
+                      ymin = median, ymax = median, 
+                      color = color_crossbar),
+                  width = disease.width + 10) + # modify this if crossbar is too wide
     theme(axis.title.x = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1), 
+          axis.text.x = element_text(angle = 45, hjust = 1, color = rmEMPTY), 
           axis.line = element_line(color = "black"),
           axis.text = element_text(size = 22, color = "black"),
           axis.title = element_text(size = 22), 
@@ -71,13 +76,12 @@ Splot.fx <- function(list.sorted_df.median, myvar, colby, colpal, plottitle){
           legend.position = "none") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          panel.background = element_rect(fill = "transparent",
-                                          colour = NA),
+          panel.background = element_rect(fill = "transparent", colour = NA),
           panel.border=element_blank(),
           plot.margin = unit(c(1.2,1,0,1),"cm")) +
-    scale_color_manual(values = colpal, guide = FALSE) +
-    scale_x_continuous(breaks = seq((disease.width)/2,max(sorted_df$Xpos),
-                                    disease.width+30),
+    scale_color_manual(values = c(colpal, "white" = "white", "black" = "black"), guide = FALSE) +
+    scale_x_continuous(breaks = seq((disease.width)/2,max(sorted_df$Xpos), 
+                                    disease.width+15),
                        labels = median_df$group,
                        expand = c(0,20)) + 
     labs(y = myvar, title = plottitle) 
