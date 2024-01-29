@@ -2,10 +2,10 @@ library(ggplot2)
 
 myaxis <- 
   #axis
-  theme(axis.title = element_text(size = 15, color = "black"),
+  theme(axis.title = element_text(size = 13, color = "black"),
         axis.line = element_line(color = "black"),
-        axis.text.x = element_text(size = 15, angle = 45, hjust = 1, color = "black"),
-        axis.text.y = element_text(size = 15, color = "black")) 
+        axis.text.x = element_text(size = 13, angle = 45, hjust = 1, color = "black"),
+        axis.text.y = element_text(size = 13, color = "black")) 
 myplot <-
   #plot
   theme(panel.grid.major = element_blank(),
@@ -18,6 +18,6 @@ myplot <-
         legend.text = element_text( color = "black", size = 10),
         legend.title = element_blank(),
         legend.key.size = unit(0.5, 'cm'))  +
-  theme(plot.title = element_text(size = 15, hjust = 0.5, colour = "black"))
+  theme(plot.title = element_text(size = 13, hjust = 0.5, colour = "black"))
 
 

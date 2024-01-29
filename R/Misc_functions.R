@@ -225,7 +225,7 @@ delta_basespiderplot.fx <- function(df_diff, var1, clrby, colpal) {
     myaxis +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1),
-      axis.title.x = element_blank()
+      axis.title.x = element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
   return(p0)
 }

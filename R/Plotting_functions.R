@@ -61,7 +61,7 @@ Splot.fx <- function(list.sorted_df.median, myvar, colby, colpal, plottitle){
     geom_point(data = sorted_df, 
                aes(x = Xpos ,y = eval(parse(text = myvar)),
                    color = eval(parse(text = colby))), 
-               size = 4) +
+               size = 2) +
     geom_crossbar(data = median_df, 
                   aes(x = medianloc, y = median,
                       ymin = median, ymax = median, 
