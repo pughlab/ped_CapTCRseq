@@ -230,6 +230,52 @@ delta_basespiderplot.fx <- function(df_diff, var1, clrby, colpal) {
   return(p0)
 }
 
+lsmeans_df.fx <- function(df, mycols, cancergrp) {
+  marker <- gsub("`", "", mycols[1])
+  grp_df <- df[df$cancergroup == cancergrp, ]
+  grp_df <- grp_df[ grp_df$marker == marker,]
+  myformula <- as.formula(paste0("Diff", " ~ cycle + Age + (1 | Patient)"))
+  myfit <- lme4::lmer(myformula, data = grp_df) # keep cycle as categorical
+  lsm <- lsmeans(myfit, "cycle")
+  mylsm_grp <- summary(lsm)
+  mylsm_grp$cancergroup <- cancergrp # has to be same as original df
+  mylsm_grp$marker <- marker
+  
+  myctrt_grp <- as.data.frame(lsmeans::contrast(lsm, "trt.vs.ctrl", ref = "X01"))
+  myctrt_grp$cancergroup <- cancergrp
+  myctrt_grp$marker <-marker
+  
+  for (i in mycols[2:length(mycols)]) {
+    marker <- gsub("`", "", i)
+    grp_df <- df[df$cancergroup == cancergrp, ]
+    grp_df <- grp_df[ grp_df$marker == marker,]
+    print(i)
+    myformula <- as.formula(paste0("Diff", " ~ cycle + Age + (1 | Patient)"))
+    myfit <- lme4::lmer(myformula, data = grp_df)
+    lsm <- lsmeans(myfit, "cycle")
+    
+    myctrt <- as.data.frame(lsmeans::contrast(lsm, "trt.vs.ctrl", ref = "X01"))
+    myctrt$cancergroup <- cancergrp
+    myctrt$marker <- marker
+    myctrt_grp <- rbind(myctrt_grp, myctrt)
+    
+    mylsm <- summary(lsm)
+    mylsm$cancergroup <- cancergrp
+    mylsm$marker <- marker
+    mylsm_grp <- rbind(mylsm_grp, mylsm)
+  }
+  
+  mylsm_grp$Cycle <- as.character(mylsm_grp$cycle)
+  mylsm_grp$Cycle <- as.numeric(gsub("X0", "", mylsm_grp$Cycle))
+  
+  myctrt_grp$Cycle <- as.character(gsub(" - X01", "", myctrt_grp$contrast))
+  myctrt_grp$Cycle <- gsub("X0", "", myctrt_grp$Cycle)
+  
+  mylsm_grp$marker <- factor(mylsm_grp$marker, levels = gsub("`", "", mycols))
+  myctrt_grp$marker <- factor(myctrt_grp$marker, levels = gsub("`", "", mycols))
+  
+  return(list(mylsm_grp, myctrt_grp))
+}
 
 
 
