@@ -112,10 +112,10 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
     recurring_df <- CDR3_fraction[CDR3_fraction$nSeqCDR3 %in% recurring,]
     recurringcdr3_ordered <- unique(recurring_df$nSeqCDR3[order(recurring_df$cloneCount, decreasing = TRUE)])
     message("Total number of recurring clonotypes > 50 ")
-    message("Tracking top 10 recurring clonotypes ")
-    myColors <- distinctColorPalette(10)
+    message("Tracking top 20 recurring clonotypes ")
+    myColors <- distinctColorPalette(20)
 
-    myColors <- c(myColors, rep("white",length(recurring)-10),
+    myColors <- c(myColors, rep("white",length(recurring)-20),
                   rep("white",length(notrecurring)))
     names(myColors) <- c(recurringcdr3_ordered, notrecurring)
 
@@ -146,6 +146,7 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
     }
   }
 
+  
   p <-  ggplot(CDR3_fraction, aes(x = samplename,
                                   y = eval(as.name(countfrac)),
                                   fill = nSeqCDR3,
@@ -169,8 +170,8 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
           legend.key = element_rect(fill = "white", colour = "white"),
           legend.position = "none",
           plot.margin = unit(c(0.2,0,0,0),"cm")) +
-    labs(y = countfrac) + labs(title = plottitle) +
-    scale_x_discrete(labels = levels(compldfle$samplelabel) )
+    labs(y = countfrac) + labs(title = plottitle) 
+    #scale_x_discrete(labels = levels(compldfle$samplelabel) )
 
   # pdf(paste0(plotpath, "clonetrack_", mysamples[1], chain, countfrac, ".pdf"),
   #     width = 10,
@@ -180,8 +181,56 @@ plot_clonetracks.fx <- function(compldfle, plotpath, chain, countfrac, clnefrc, 
   # print(myp)
   # dev.off()
 
-  return(myp)
+  return(list(myp, myColors) )
 }
+
+
+trbpointplot.fx <- function(metadta, pat) { # need type_col in global env
+  pat_sample <- metadta[metadta$Patient == pat, ] # should not contain NA
+  
+  # order sampletype Tumor, PBMC, cfDNA
+  pat_sample$sampletype <- factor(pat_sample$sampletype, levels = c("Tumor", "PBMC", "cfDNA"))
+  # order samplename by cycle and sampletype
+  pat_sample$basename <- factor(pat_sample$basename, levels = unique(pat_sample$basename[order(pat_sample$cycle, pat_sample$sampletype)]))
+  
+  # TRB bar plot
+  pointp <- ggplot(data = pat_sample, aes(y = TRB, x = basename, color = sampletype)) +
+    geom_point(size = 5) +
+    theme(
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank(),
+      axis.line = element_line(color = "black"),
+      axis.text = element_text(size = 15),
+      axis.title = element_text(size = 15),
+      legend.position = "none"
+    ) +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.background = element_rect(fill = "transparent", colour = NA),
+      panel.border = element_blank(),
+      plot.margin = unit(c(1, 0, 0, 0), "cm"),
+      plot.title = element_text(size = 15, hjust = 0.5)
+    ) +
+    scale_y_continuous(trans = "log10") +
+    annotation_logticks(sides = "l") + # log10 scale
+    scale_color_manual(values = type_col) +
+    ggtitle(paste0(pat, " : ", unique(pat_sample$Disease_type)))
+  
+  return(pointp)
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Clone specific clones given as argument
 track_Aclone.fx <- function(compldfle, plotpath, countfrac, clnefrc, clnseq){
