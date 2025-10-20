@@ -279,6 +279,7 @@ lsmeans_df.fx <- function(df, mycols, cancergrp) {
 
 
 # compile supplemental tables
+ # Only works with openxlsx, and the following format TableS1. [period is important]
 compileSuppltables <- function(tabpath, tabtitles, outpath){
   # Table files should be xlsx with the name format: TableSx
   # tabtitles are table titles with the format: "TableSx. sometitle."
@@ -286,31 +287,34 @@ compileSuppltables <- function(tabpath, tabtitles, outpath){
   # Files are appended in the same order as tabtitles.
   
   # Check if all titles end with period.
-  ttls <- unlist(lapply(tabletitles, function(x) endsWith(x, ".")))
-  if (sum(ttls) != length(tabletitles)) {
+  ttls <- unlist(lapply(tabtitles, function(x) endsWith(x, ".")))
+  if (sum(ttls) != length(tabtitles)) {
     stop(message("Error: One or more table titles do not end with a period!"))
   }
   
   #list files
-  tabfiles <- list.files(tabpath, pattern = "xlsx")
+  tabfiles <- list.files(tabpath, pattern = "TableS")
   message("list of files")
   print(tabfiles)
   # read all files
   alltabs <- lapply(tabfiles, function(x){ 
-    xlsx::read.xlsx(paste0(tabpath, x), sheetIndex = 1, check.names=FALSE)})
+    openxlsx::read.xlsx(paste0(tabpath, x))})
   #remove .xlsx from filenames and add as element names
   names(alltabs) <- gsub(".xlsx", "", tabfiles)
   message("reading tables completed")
   # Check if table file names match one of the begining of table titles. 
   # It should match to only one and all files should match      
-  mtch <- lapply(names(alltabs), function(x) sum(grepl(paste0(x, "[.] "), tabletitles))) == 1
-  if (sum(mtch) != length(tabletitles)) {
+  mtch <- lapply(names(alltabs), function(x) sum(grepl(paste0(x, "[.] "), tabtitles))) == 1
+  print(names(alltabs))
+  print(tabtitles)
+  print(mtch)
+  if (sum(mtch) != length(tabtitles)) {
     stop(message("Error: table file names do not match with begining of table titles."))
   }
   
   # match tabletitles and element names, add table title in each suppl table
   tabs_titles <- lapply(names(alltabs), function(x){
-    text_matrix(alltabs[[x]], table_title= tabletitles[grepl(paste0(x, "[.]"), tabletitles)]
+    text_matrix(alltabs[[x]], table_title= tabtitles[grepl(paste0(x, "[.]"), tabtitles)]
     )
   }
   )
@@ -318,7 +322,7 @@ compileSuppltables <- function(tabpath, tabtitles, outpath){
   names(tabs_titles) <- names(alltabs)
   
   # get order of tables to append from tabtitles. Split by period and one space use the first element
-  myorder <- vapply(strsplit(tabletitles,"[.] "), `[`, 1, FUN.VALUE=character(1))
+  myorder <- vapply(strsplit(tabtitles,"[.] "), `[`, 1, FUN.VALUE=character(1))
   message("appending all tables together")  
   # order the list with myorder
   tabs_titles_ordered <- tabs_titles[myorder]
@@ -326,9 +330,9 @@ compileSuppltables <- function(tabpath, tabtitles, outpath){
   lapply(names(tabs_titles_ordered),function(x){ 
     message(x)
     #xlsx2 is faster
-    xlsx::write.xlsx2(tabs_titles_ordered[[x]], file = paste0(outpath,"SupplementalTables.xlsx"),
+    openxlsx::write.xlsx(tabs_titles_ordered[[x]], file = paste0(outpath,"SupplementalTables.xlsx"),
                       sheetName = x, 
-                      col.names = FALSE, row.names = FALSE, append = TRUE)
+                      colNames = FALSE, rowNames = FALSE, append = TRUE)
   })
   message("all tables appended")
 }
