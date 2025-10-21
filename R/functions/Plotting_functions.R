@@ -52,7 +52,7 @@ sort.df.fx <- function(df, median_df, myvar, mygroups){
 }
 
 
-Splot.fx <- function(list.sorted_df.median, myvar, colby, colpal, plottitle){       
+Splot.fx <- function(list.sorted_df.median, myvar, colby, colpal, plottitle, rmEMPTY){       
   sorted_df <- as.data.frame(list.sorted_df.median[[1]])
   median_df <- as.data.frame(list.sorted_df.median[[2]])
   disease.width <- nrow(sorted_df)/nrow(median_df)
