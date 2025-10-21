@@ -70,7 +70,7 @@ soc_long <- soc |>
   select(everything()) %>%
   # Clean up cycle numbers
   mutate(cycle = as.numeric(cycle)) |>
-  filter(!is.na(drugs), drugs != "N/A") |>
+  filter(!is.na(drugs)) |>
   mutate(drugs = normalize_drug_names(drugs)) |>
   tidyr::separate_rows(drugs, sep = ", ") |>
   mutate(drugs = trimws(drugs)) 
@@ -80,7 +80,8 @@ soc_long$drug_type[grepl("Vincristine|Daunorubicin|Asparaginase|Mercaptopurine|C
 soc_long$drug_type[grepl("Dexamethasone|Prednisone", soc_long$drugs, ignore.case=TRUE)] <- "Steroid"
 soc_long$drug_type[grepl("Imatinib", soc_long$drugs, ignore.case=TRUE)] <- "Small molecule"
 
-  tab <- soc_long %>%
+  tab <- soc_long |>
+    filter(drugs != "N/A") |>
     group_by(Disease, Cancergroup, cycle, drugs) %>% 
     summarise(Count = n(), .groups = "drop")  
   # Add drug_type column by matching drugs from data
@@ -146,6 +147,7 @@ for (cycle in 1:5) {
   vin_patients <- unique(cycle_data$`Patient ID`[cycle_data$drugs == "Vincristine"])
   mtx_patients <- unique(cycle_data$`Patient ID`[cycle_data$drugs == "Methotrexate"])
   cyclo_patients <- unique(cycle_data$`Patient ID`[cycle_data$drugs == "Cyclophosphamide"])
+  norx_patients <- unique(cycle_data$`Patient ID`[cycle_data$drugs == "N/A"])
 
   col_name <- paste0("base_regimen_cycle", cycle)
   soc[[col_name]] <- sapply(soc$`Patient ID`, function(pat) {
@@ -153,6 +155,7 @@ for (cycle in 1:5) {
     if (pat %in% vin_patients) regimens <- c(regimens, "Vincristine")
     if (pat %in% mtx_patients) regimens <- c(regimens, "Methotrexate")
     if (pat %in% cyclo_patients) regimens <- c(regimens, "Cyclophosphamide")
+    if(pat %in% norx_patients) regimens <- c(regimens, "No therapy")
     if (length(regimens) == 0) return(NA)
     paste(regimens, collapse = "/")
   })
@@ -289,6 +292,7 @@ values = c("Vincristine" = "#E41A1C",
            "Vincristine/Methotrexate" = "#984EA3",
            "Vincristine/Cyclophosphamide" = "#fa9734",
            "Vincristine/Methotrexate/Cyclophosphamide" = "#f781bf",
+           "No therapy" = "grey",
            "Others" = "black",
            "Yes" = "black",
            na.value=NA),
