@@ -3,11 +3,13 @@
 # Title: Figure 2
 
 # Inputs:
-#   - meta_div_goodsamples.rds (from OneDrive datapath as per notebooks)
+#   - metadata.rds 
 #   - Color and theme helpers from `R/functions/color_schemes.R` and `R/functions/ggplot2_theme.R`
 #   - Misc helpers for p-value formatting from `R/functions/Misc_functions.R`
+#   - Plotting helpers from `R/functions/Plotting_functions.R`
 # Outputs:
-#   - Plots saved to `plots/` (e.g., Fig2_Naive_X01.pdf)
+#   - Plots saved to `plots/` (e.g., Fig2A.pdf)
+#   - Tables saved to `tables/` (e.g., PD1percent_cohort_median_summary.xlsx)
 # Usage:
 #   Rscript R/Figure2.R
 
@@ -20,17 +22,20 @@ suppressPackageStartupMessages({
   library(ggdist)
   library(ggsignif)
 })
-temp <- "~/git/ped_CapTCRseq"
+
 # Load helper palettes and themes
-source(file.path(temp, "R/functions", "color_schemes.R"))
-source(file.path(temp, "R/functions", "ggplot2_theme.R"))
-source(file.path(temp, "R/functions", "Misc_functions.R"))
+source(file.path(getwd(), "R/functions", "color_schemes.R"))
+source(file.path(getwd(), "R/functions", "ggplot2_theme.R"))
+source(file.path(getwd(), "R/functions", "Misc_functions.R"))
+source(file.path(getwd(), "R/functions", "Plotting_functions.R"))
 
 # Project-rooted paths
-project_root <- temp
+project_root <- getwd()
 plots_dir <- file.path(project_root, "plots")
+tables_dir <- file.path(project_root, "tables")
 input_rds <- file.path(project_root, "data", "metadata.rds")
 if (!dir.exists(plots_dir)) dir.create(plots_dir, recursive = TRUE)
+if (!dir.exists(tables_dir)) dir.create(tables_dir, recursive = TRUE)
 
 
 # --- Reusable plotting helpers -------------------------------------------------
@@ -147,24 +152,148 @@ generate_raincloud_with_ks <- function(
   return(p_final)
 }
 
+build_marker_summary_plot <- function(
+  df,
+  marker,
+  disease_col = "Disease_type",
+  cancergroup_col = "cancergroup",
+  group_col,
+  median_fun = median.cohorts.fx,
+  sort_fun = sort.df.fx,
+  splot_fun = Splot.fx,
+  ylim_range = c(0, 100),
+  y_label = NULL,
+  title_underlined = TRUE,
+  dummy_groups = c("EMPTY1", "EMPTY2", "EMPTY3"),
+  dummy_cancergroups = c("Lymphoma", "Solid tumors", "T-cell malignancies"),
+  export_path = NULL,
+  export_engine = c("auto", "writexl", "openxlsx"),
+  export_overwrite = TRUE
+) {
+  export_engine <- match.arg(export_engine)
 
+  # Defensive: ensure needed columns exist and are not factors (for safe assignment)
+  if (!cancergroup_col %in% names(df)) {
+    df[[cancergroup_col]] <- NA
+  }
+  if (is.factor(df[[disease_col]])) df[[disease_col]] <- as.character(df[[disease_col]])
+  if (is.factor(df[[cancergroup_col]])) df[[cancergroup_col]] <- as.character(df[[cancergroup_col]])
+
+  # Create 3 NA dummy rows preserving column classes
+  if (nrow(df) == 0) stop("Input df has 0 rows; cannot infer column classes.")
+  dummy_rows <- df[rep(1, length(dummy_groups)), , drop = FALSE]
+  dummy_rows[] <- NA
+
+  # Fill dummy rows
+  for (i in seq_along(dummy_groups)) {
+    dummy_rows[i, disease_col] <- dummy_groups[i]
+    dummy_rows[i, marker] <- -1
+    dummy_rows[i, cancergroup_col] <- dummy_cancergroups[i]
+  }
+
+  # Prepend dummy rows
+  df_augmented <- rbind(dummy_rows, df)
+
+  # Compute medians per cohort
+  mymed <- median_fun(df_augmented, marker, disease_col)
+
+  # Attach cancergroup to medians by matching on group vs disease_col
+  mymed[[cancergroup_col]] <- df_augmented[[cancergroup_col]][
+    match(mymed$group, df_augmented[[disease_col]])
+  ]
+
+  # Order by cancergroup then median
+  mymed <- mymed[order(mymed[[cancergroup_col]], mymed$median), , drop = FALSE]
+
+  # Exclude dummy rows for export/return
+  mymed_no_dummy <- mymed[!(mymed$group %in% dummy_groups), , drop = FALSE]
+
+  # Sort full data using provided helper
+  sorted_df_list <- sort_fun(df_augmented, mymed, marker, disease_col)
+
+  # Colors for dummy entries (white for empties)
+  dummy_colors <- rep("black", nrow(mymed))
+  dummy_colors[mymed$group %in% dummy_groups] <- "white"
+
+  # Quote marker for non-syntactic names when passing as string to plotting helper
+  is_standard_name <- grepl("^[A-Za-z\\.][A-Za-z0-9_\\.]*$", marker)
+  marker_for_plot <- if (is_standard_name) marker else paste0("`", marker, "`")
+
+  # Build plot
+  sp <- splot_fun(sorted_df_list, marker_for_plot, cancergroup_col, group_col, "", rmEMPTY = dummy_colors)
+
+  # Y label and title
+  final_ylabel <- if (is.null(y_label)) marker else y_label
+  if (isTRUE(title_underlined)) {
+    plot_title <- bquote(underline(.(marker)))
+  } else {
+    plot_title <- marker
+  }
+  sp_limited <- sp + ylim(ylim_range) + labs(y = final_ylabel) + ggtitle(plot_title)
+
+  # Optional export to Excel
+  if (!is.null(export_path)) {
+    if (export_engine == "auto") {
+      if (requireNamespace("writexl", quietly = TRUE)) {
+        writexl::write_xlsx(mymed_no_dummy, path = export_path)
+      } else if (requireNamespace("openxlsx", quietly = TRUE)) {
+        openxlsx::write.xlsx(mymed_no_dummy, file = export_path, overwrite = export_overwrite)
+      } else {
+        stop("No Excel writer available. Install either 'writexl' or 'openxlsx'.")
+      }
+    } else if (export_engine == "writexl") {
+      if (!requireNamespace("writexl", quietly = TRUE)) {
+        stop("Package 'writexl' not installed.")
+      }
+      writexl::write_xlsx(mymed_no_dummy, path = export_path)
+    } else if (export_engine == "openxlsx") {
+      if (!requireNamespace("openxlsx", quietly = TRUE)) {
+        stop("Package 'openxlsx' not installed.")
+      }
+      openxlsx::write.xlsx(mymed_no_dummy, file = export_path, overwrite = export_overwrite)
+      message("Exported to ", export_path)
+    }
+  }
+
+  # Return everything useful
+  list(
+    data_augmented = df_augmented,
+    medians = mymed,
+    medians_no_dummy = mymed_no_dummy,
+    colors_dummy = dummy_colors,
+    sorted = sorted_df_list,
+    plot = sp,
+    plot_final = sp_limited + theme(axis.text = element_text(size = 13), 
+                                    axis.title = element_text(size = 13), 
+                                    plot.title = element_text(size = 13), 
+                                    plot.margin = unit(c(0, 0, 0, 0), "cm")),
+    export_path = export_path
+  )
+}
 # --- Load inputs ---------------------------------------------------------------
 
 metadata <- readr::read_rds(input_rds)
 
 # --- Filters --------------------------------------------------
-
+## For raincloud plots
 # Exclude missing CD3
 metadata <- metadata[!is.na(metadata$CD3), ]
 # Exclude T-cell malignancies
-metadata <- metadata[metadata$cancergroup != "T-cell malignancies", ]
+metadata_raincloud <- metadata[metadata$cancergroup != "T-cell malignancies", ]
 # PBMC only
-pbmc <- metadata[metadata$sampletype == "PBMC", ]
+pbmc <- metadata_raincloud[metadata_raincloud$sampletype == "PBMC", ]
 # Remove zero CD3
 pbmc <- pbmc[pbmc$CD3 > 0, ]
 # Baseline X01
 pbmc_01 <- pbmc[pbmc$cycle == "X01", ]
 
+## For S plots - include T-cell malignancies
+# PBMC only
+pbmc <- metadata[metadata$sampletype == "PBMC", ]
+# Remove zero CD3
+pbmc <- pbmc[pbmc$CD3 > 0, ]
+# Baseline X01
+pbmc_01_splot <- pbmc[pbmc$cycle == "X01", ]
 
 # --- Figure 2A ---------------------------------
 
@@ -236,10 +365,53 @@ ggsave(file.path(plots_dir, "Fig2C.pdf"), p2, width = 6, height = 6)
 message("Figure 2C saved to ", file.path(plots_dir, "Fig2C.pdf"))
 
 # --- Figure 2D ---------------------------------
+p3 <- build_marker_summary_plot(
+  pbmc_01_splot,
+  marker = "PD1%",
+  disease_col = "Disease_type",
+  cancergroup_col = "cancergroup",
+  group_col = group_col,
+  median_fun = median.cohorts.fx,
+  sort_fun = sort.df.fx,
+  splot_fun = Splot.fx,
+  ylim_range = c(0, 100),
+  y_label = "PD1%",
+  title_underlined = TRUE,
+  dummy_groups = c("EMPTY1", "EMPTY2", "EMPTY3"),
+  dummy_cancergroups = c("Lymphoma", "Solid tumors", "T-cell malignancies"),
+  export_path = file.path(tables_dir, "PD1percent_cohort_median_summary.xlsx"),
+  export_engine = "auto",
+  export_overwrite = TRUE
+) 
+
+ggsave(file.path(plots_dir, "Fig2D.pdf"), p3$plot_final, width = 6, height = 4)
+message("Figure 2D saved to ", file.path(plots_dir, "Fig2D.pdf"))
+
 # --- Figure 2E ---------------------------------
 
+p4 <- build_marker_summary_plot(
+  pbmc_01_splot,
+  marker = "LAG3%",
+  disease_col = "Disease_type",
+  cancergroup_col = "cancergroup",
+  group_col = group_col,
+  median_fun = median.cohorts.fx,
+  sort_fun = sort.df.fx,
+  splot_fun = Splot.fx,
+  ylim_range = c(0, 100),
+  y_label = "LAG3%",
+  title_underlined = TRUE,
+  dummy_groups = c("EMPTY1", "EMPTY2", "EMPTY3"),
+  dummy_cancergroups = c("Lymphoma", "Solid tumors", "T-cell malignancies"),
+  export_path = file.path(tables_dir, "LAG3percent_cohort_median_summary.xlsx"),
+  export_engine = "auto",
+  export_overwrite = TRUE
+) 
+ggsave(file.path(plots_dir, "Fig2E.pdf"), p4$plot_final, width = 6, height = 4)
+message("Figure 2E saved to ", file.path(plots_dir, "Fig2E.pdf"))
+
 # --- Figure 2F ---------------------------------
-p3 <- generate_raincloud_with_ks(
+p5 <- generate_raincloud_with_ks(
   df = pbmc_01,
   y_col = "CM%",
   x_col = "cancergroup",
@@ -258,11 +430,11 @@ p3 <- generate_raincloud_with_ks(
 )
 
 # Save
-ggsave(file.path(plots_dir, "Fig2F.pdf"), p3, width = 6, height = 6)
+ggsave(file.path(plots_dir, "Fig2F.pdf"), p5, width = 6, height = 6)
 message("Figure 2F saved to ", file.path(plots_dir, "Fig2F.pdf"))
 
 # --- Figure 2G ---------------------------------
-p4 <- generate_raincloud_with_ks(
+p6 <- generate_raincloud_with_ks(
   df = pbmc_01,
   y_col = "Naïve%",
   x_col = "cancergroup",
@@ -279,11 +451,11 @@ p4 <- generate_raincloud_with_ks(
 )
 
 # Save
-ggsave(file.path(plots_dir, "Fig2G.pdf"), p4, width = 6, height = 6)
+ggsave(file.path(plots_dir, "Fig2G.pdf"), p6, width = 6, height = 6)
 message("Figure 2G saved to ", file.path(plots_dir, "Fig2G.pdf"))
 
 # --- Figure 2H ---------------------------------
-p5 <- generate_raincloud_with_ks(
+p7 <- generate_raincloud_with_ks(
   df = pbmc_01,
   y_col = "TE%",
   x_col = "cancergroup",
@@ -300,7 +472,29 @@ p5 <- generate_raincloud_with_ks(
 )
 
 # Save
-ggsave(file.path(plots_dir, "Fig2H.pdf"), p5, width = 6, height = 6)
+ggsave(file.path(plots_dir, "Fig2H.pdf"), p7, width = 6, height = 6)
 message("Figure 2H saved to ", file.path(plots_dir, "Fig2H.pdf"))
 
 # --- Figure 2I ---------------------------------
+
+p8 <- build_marker_summary_plot(
+  pbmc_01_splot,
+  marker = "CM%",
+  disease_col = "Disease_type",
+  cancergroup_col = "cancergroup",
+  group_col = group_col,
+  median_fun = median.cohorts.fx,
+  sort_fun = sort.df.fx,
+  splot_fun = Splot.fx,
+  ylim_range = c(0, 100),
+  y_label = "CM%",
+  title_underlined = TRUE,
+  dummy_groups = c("EMPTY1", "EMPTY2", "EMPTY3"),
+  dummy_cancergroups = c("Lymphoma", "Solid tumors", "T-cell malignancies"),
+  export_path = file.path(tables_dir, "CMpercent_cohort_median_summary.xlsx"),
+  export_engine = "auto",
+  export_overwrite = TRUE
+) 
+
+ggsave(file.path(plots_dir, "Fig2I.pdf"), p8$plot_final, width = 6, height = 4)
+message("Figure 2I saved to ", file.path(plots_dir, "Fig2I.pdf"))
