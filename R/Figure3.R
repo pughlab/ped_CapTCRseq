@@ -50,7 +50,9 @@ segment_spider_plot <- function(df_diff,
                                 color_var = "exposed_regimen",
                                 colpal = NULL,
                                 facet_formula = NULL,
-                                y_lab = NULL) {
+                                y_lab = NULL,
+                                nrow = NULL,
+                                ncol = NULL) {
   if (!requireNamespace("ggh4x", quietly = TRUE)) {
     warning("Package 'ggh4x' not installed; facet_wrap2 will be unavailable.")
   }
@@ -96,7 +98,7 @@ segment_spider_plot <- function(df_diff,
 
   if (!is.null(facet_formula)) {
     if (requireNamespace("ggh4x", quietly = TRUE)) {
-      p <- p + ggh4x::facet_wrap2(as.formula(facet_formula), axes = "all", remove_labels = "all") +
+      p <- p + ggh4x::facet_wrap2(as.formula(facet_formula), axes = "all", remove_labels = "all", nrow = nrow, ncol = ncol) +
         theme(
           axis.title.x = element_blank(),
           legend.position = "none",
@@ -372,7 +374,7 @@ p_fig3d <- segment_spider_plot(
   color_var = "exposed_regimen",
   colpal = regimen_palette,
   facet_formula = "~ marker + Disease_type",
-  y_lab = "D T-cell subsets"
+  y_lab = "D T-cell subsets", nrow = 1
 )
 
 ggsave(file.path(plots_dir, "Fig3D.pdf"), cowplot::plot_grid(p_fig3d, labels = "D"), width = 12, height = 3)
